@@ -1,0 +1,378 @@
+---
+output:
+html_notebook: default
+html_document: default
+---
+This is a **notebook**. My *first* one in R.
+
+```{r}
+1+1
+```
+
+The following code reads your team's final dataset from the link provided. It will also define the final data as CSV.  
+
+```{r}
+linkcsv="https://github.com/ComputationalThinkingGroup5/Merge/raw/master/MergedData.csv"
+FinalData=read.csv(linkcsv)
+```
+
+You can view the data types in your dataset using the following str() code:
+
+```{r}
+str(FinalData)
+```
+
+The following code will show you the names of the variables in your dataset. 
+
+```{r}
+names(FinalData)
+
+```
+
+Determine the value of a cell by typing the indexes of where it is located: 
+
+```{r}
+FinalData[2,3]
+```
+
+The following code will display a row: 
+
+```{r}
+FinalData[2,]
+```
+
+The following code will display the specified columns, and the c() command prepares a vector of indexes. 
+
+```{r}
+FinalData[2,c("country", "pct_GDP_exp","percentunemployment" )]
+```
+
+The following command defines the first condition as the country with the highest chosen variable, this case being the highest GDP expenditure. 
+```{r}
+condition1=FinalData$pct_GDP_exp==max(FinalData$pct_GDP_exp)
+FinalData[condition1,]
+```
+
+This command defines which country has the highest GDP. 
+
+```{r}
+FinalData[condition1, "country"]
+```
+```{r}
+FinalData[FinalData$popgrowth.rate<0, 'country']
+```
+
+The next command defines "shrinking population" as countries which have a negative value of the "popgrowth.rate" variable. 
+```{r}
+shrinkingpop=FinalData[FinalData$popgrowth.rate<0,]
+```
+```{r}
+shrinkingpop[shrinkingpop$percentunemployment==max(shrinkingpop$percentunemployment),]
+```
+
+```{r}
+shrinkingpop=FinalData[FinalData$popgrowth.rate<0,]
+```
+
+The following condition defines condition2 as.... 
+
+```{r}
+condition2=shrinkingpop$percentunemployment==max(shrinkingpop$percentunemployment)
+shrinkingpop[condition2,]
+```
+
+Install pipes and dplyr. 
+```{r}
+library(magrittr)
+library(dplyr)
+```
+
+Define dfClus as 
+```{r}
+dfClus=FinalData[,c("percentunemployment", "percentbirthrate", "pct_GDP_exp")]
+summary(dfClus)
+```
+
+Rescale units if needed into new variable: 
+```{r}
+dfClus=scale(dfClus)
+summary(dfClus)
+```
+
+```{r}
+link='https://github.com/ComputationalThinkingGroup5/Merge/raw/master/MergedData.csv'
+myFile=url(link)
+fromPy=read.csv(file=myFile)
+row.names(fromPy)=NULL
+```
+
+Rename subset indexes and verify what input is:
+```{r}
+row.names(dfClus)=fromPy$country
+head(dfClus)
+```
+
+Set random seed: this number must correspond wih any group members' seeds. 
+```{r}
+set.seed(999)
+```
+
+Decide distance method and compute distance matrix:
+```{r}
+library(cluster)
+dfClus_D=cluster::daisy(x=dfClus)
+```
+
+Partitioning technique:
+Apply function: need to indicate the amount of clusters required
+```{r}
+NumCluster=4
+res.pam=pam(x=dfClus_D,
+            k= NumCluster,
+            cluster.only = F)
+
+```
+
+Clustering results: 
+Add results to original data frame: 
+```{r}
+fromPy$pam=as.factor(res.pam$clustering)
+```
+
+Query data frame as needed: 
+Example 1: 
+```{r}
+fromPy[fromPy$pam==1, 'country']
+```
+
+Example 2: 
+```{r}
+fromPy[fromPy$country=="Peru", 'pam']
+```
+
+Report: table of clusters
+```{r}
+table(fromPy$pam)
+```
+Report: average silhouettes
+```{r}
+library(factoextra)
+```
+
+```{r}
+fviz_silhouette(res.pam)
+```
+Detecting Anomalies: 
+Save individual silhouettes: 
+```{r}
+pamEval=data.frame(res.pam$silinfo$widths)
+head(pamEval)
+```
+
+Request negative silhouettes: these are the ones which are poorly clustered. 
+```{r}
+pamEval[pamEval$sil_width<0,]
+```
+Hierarchizing: agglomerative
+
+Apply function:
+```{r}
+library(factoextra)
+
+res.agnes=hcut(dfClus_D,
+               k= NumCluster, isdiss=T,
+               hc_func='agnes',
+               hc_method = "ward.D2")
+```
+Clustering Results:
+
+Add results to original data frame: 
+```{r}
+fromPy$agn=as.factor(res.agnes$cluster)
+```
+Query data frame as needed:
+
+Example 1: 
+```{r}
+fromPy[fromPy$agn==1, 'country']
+```
+
+Example 2: 
+```{r}
+fromPy[fromPy$country=="Peru",'agn']
+```
+
+Report: Table of Clusters
+
+Reporting results:
+```{r}
+table(fromPy$agn)
+```
+
+Report: dendogram
+```{r}
+fviz_dend(res.agnes,k=NumCluster, cex = 0.7, horiz= T)
+```
+
+Report: average silhouettes
+```{r}
+library(factoextra)
+fviz_silhouette(res.agnes)
+```
+
+Report: Detecting Anomalies
+Saving silhouettes:
+```{r}
+agnEval=data.frame(res.agnes$silinfo$widths)
+head(agnEval)
+```
+
+Request negative silhouettes:
+```{r}
+agnEval[agnEval$sil_width<0,]
+```
+Hierarchizing: divisive
+
+Apply function: you need to indicate amount of clusters required. Install factoextra. 
+```{r}
+library(factoextra)
+
+res.diana= hcut(dfClus_D, k = NumCluster,
+                hc_func='diana',
+                hc_method = "ward.D")
+```
+Clustering Results: 
+
+Adding results to original data frame: 
+```{r}
+fromPy$dia=as.factor(res.diana$cluster)
+```
+
+Query data frame as needed: 
+
+Example 1: 
+```{r}
+fromPy[fromPy$dia==1, 'country']
+```
+
+Example 2: 
+```{r}
+fromPy[fromPy$country=="Peru", 'dia']
+```
+
+Report: Table of Clusters
+Reporting results:
+```{r}
+table(fromPy$dia)
+```
+
+Evaluating Results: 
+Report: Dendogram 
+```{r}
+fviz_dend(res.diana, k=NumCluster, cex = 0.7, horiz = T)
+```
+REPORT: Average silhouettes. 
+
+Install factoextra. 
+```{r}
+library(factoextra)
+fviz_silhouette(res.diana)
+```
+Detecting anomolies: 
+
+Saving silhouettes: 
+```{r}
+diaEval=data.frame(res.diana$silinfo$widths)
+head(diaEval)
+```
+Request negative silhouettes:
+```{r}
+diaEval[diaEval$sil_width<0,]
+```
+Input the distance and the minimal number of neighbors that form a cluster. 
+```{r}
+library(dbscan)
+minNeighs=4
+kNNdistplot(dfClus_D, k = minNeighs)
+abline(h=0.3, col = "red", lty=2)
+```
+
+```{r}
+distance=0.3
+res.db=dbscan::dbscan(dfClus_D,
+                      eps=distance,
+                      minPts=minNeighs)
+```
+
+How many clusters were produced, and how many outliers are there? 
+```{r}
+res.db
+```
+
+Save results: 
+```{r}
+fromPy$db=as.factor(res.db$cluster)
+```
+
+Comparing clustering
+
+Prepare a bidimensional map:
+```{r}
+projectedData=cmdscale(dfClus_D, k=2)
+fromPy$dim1 = projectedData[,1]
+fromPy$dim2 = projectedData[,2]
+```
+
+See the data plotted/mapped:
+```{r}
+base= ggplot(data=fromPy,
+             aes(x=dim1, y=dim2,
+                 label=country))
+base + labs(title= "Bidimensional Map") + geom_text(size=2)
+```
+
+Plot results from PAM: 
+```{r}
+Cluster1=base + labs(title = "Cluster1") + geom_point(size = 2,
+                                                aes(color=agn),
+                                                show.legend = F)
+```
+
+Plot results from hierarchial AGNES:
+```{r}
+Cluster2=base + labs(title = "Cluster2") + geom_point(size=2,
+                                                  aes(color=agn),
+                                                  show.legend = F)
+```
+
+Plot results from hierarchical DIANA: 
+```{r}
+Cluster3=base + labs(title = "Cluster3") + geom_point(size=2,
+                                                  aes(color=dia),
+                                                  show.legend = F)
+```
+
+Visually compare the data.  
+```{r}
+library(ggpubr)
+ggarrange(Cluster1, Cluster2, Cluster3, ncol = 3)
+```
+
+Plot results: 
+```{r}
+dbPlot = base + labs(title = "DBSCAN") + geom_point(aes(color=db),
+                                                    show.legend = T)
+```
+
+Annotate data:
+```{r}
+library(ggrepel)
+dbPlot + geom_text_repel(size=3, aes(label=country))
+```
+
+Annotate outliers of the dataset:
+```{r}
+LABEL=ifelse(fromPy$db==0, fromPy$country, "")
+
+dbPlot + geom_text_repel(aes(label=LABEL))
+```
