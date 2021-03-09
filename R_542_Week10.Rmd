@@ -1,8 +1,8 @@
-#PUBPOL542: Computational Thinking for Governance Analytics#
-##Professor Jose Manuel Magallanes##
-###Hanna Peterson, MPA Candidate at the Evans School of Public Policy of Governance###
+# PUBPOL542: Computational Thinking for Governance Analytics
+## Professor Jose Manuel Magallanes
+### Hanna Peterson, MPA Candidate at the Evans School of Public Policy of Governance
 
-##Introduction to R##
+## Introduction to R
 The following code reads your team's final dataset from the link provided. It will also define the final data as CSV.  
 ```{r}
 linkcsv="https://github.com/ComputationalThinkingGroup5/Merge/raw/master/MergedData.csv"
@@ -71,7 +71,7 @@ Rescale units if needed into new variable:
 dfClus=scale(dfClus)
 summary(dfClus)
 ```
-#R for Clustering#
+## R for Clustering
 ```{r}
 link='https://github.com/ComputationalThinkingGroup5/Merge/raw/master/MergedData.csv'
 myFile=url(link)
